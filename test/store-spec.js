@@ -1,20 +1,32 @@
-// import { Map, fromJS } from 'immutable';
-// import {expect} from 'chai';
-// import makeStore from '../src/store';
+import { is, fromJS } from 'immutable'
+import { test } from 'tape'
+import makeStore from '../src/store'
 
-// describe('store', () => {
+const store = makeStore( )
 
-//   it('is a Redux store configured with the correct reducer', () => {
-//     const store = makeStore();
-//     expect(store.getState()).to.equal(Map());
+test( 'store empty', ( t ) => {
 
-//     store.dispatch({
-//       type: 'SET_ENTRIES',
-//       entries: ['Trainspotting', '28 Days Later']
-//     });
-//     expect(store.getState()).to.equal(fromJS({
-//       entries: ['Trainspotting', '28 Days Later']
-//     }));
-//   });
+	const message = 'is a Redux store configured with the correct reducer',
+		expected = fromJS( {} ),
+		actual = store.getState( )
 
-// });
+	t.ok( is( actual, expected ), message )
+	t.end( )
+} )
+
+test( 'store set entries', ( t ) => {
+
+	store.dispatch( {
+		type: 'SET_ENTRIES',
+		entries: [ 'Trainspotting', '28 Days Later' ]
+	} )
+
+	const message = 'is a Redux store configured with the correct reducer',
+		expected = fromJS( {
+			entries: [ 'Trainspotting', '28 Days Later' ]
+		} ),
+		actual = store.getState( )
+
+	t.ok( is( actual, expected ), message )
+	t.end( )
+} )
