@@ -1,14 +1,13 @@
 import {
 	List,
-	Map,
-	fromJS
+	Map
 }
 from 'immutable'
 
 function getWinners( vote ) {
 
 	if ( !vote ) {
-		return []
+		return [ ]
 	}
 	const [ a, b ] = vote.get( 'pair' )
 	const aVotes = vote.getIn( [ 'tally', a ], 0 )
@@ -16,43 +15,42 @@ function getWinners( vote ) {
 	if ( aVotes === bVotes ) {
 		return [ a, b ]
 	}
-	return ( aVotes < bVotes ) ?
-		 [ b ] : [ a ]
+	return ( aVotes < bVotes ) ? [ b ] : [ a ]
+
 }
 
 // ritorna lo stato iniziale
 
-const INITIAL_STATE = Map()
+const INITIAL_STATE = Map( )
 
-// imposta le entry per il voto nello stato
+// imposta le entry per il voto
 
 const setEntries = ( state, entries ) =>
 	state.set( 'entries', List( entries ) )
 
-// crea una mappa "vote" sullo stato, spostandoci le prime due entry disponibili
+
+// crea una mappa "vote" sullo stato, spostandoci 
+// le prime due entry disponibili
+// se abbiamo una sola entry, e' la nostra vincitrice
 
 const next = ( state ) => {
 
-	const entries = state
-		.get( 'entries' )
+	//ottiene le entry con il vincitore
+
+	const entries = state.get( 'entries' )
 		.concat( getWinners( state.get( 'vote' ) ) )
 
-	// se ho un solo concorrente ha vinto
 	if ( entries.size === 1 ) {
 
-		return state.remove( 'vote' ) 
+		return Map( state.remove( 'vote' )
 			.remove( 'entries' )
-			.set( 'winner', entries.first() )
+			.set( 'winner', entries.first( ) ) )
 	}
 
-	return state.merge( fromJS({
-		vote: {
-			// prende le prime due entry dalla coda
-			pair: entries.take( 2 )  
-		},
-		// lascia le rimanenti entry in coda
-		entries: entries.skip( 2 ) 
-	} ) )
+	return state.merge( {
+		vote: Map( { pair: entries.take( 2 ) } ),
+		entries: entries.skip( 2 )
+	} )
 }
 
 // When a vote is ongoing, it should be possible for people to vote 
@@ -62,8 +60,10 @@ const next = ( state ) => {
 
 const vote = ( voteState, entry ) => {
 
-	return voteState.updateIn( 
-		[ 'tally', entry ], 0, tally => tally + 1 
+	return voteState.updateIn(
+		[ 'tally', entry ],
+		0,
+		( tally ) => tally + 1
 	)
 }
 

@@ -1,97 +1,112 @@
-import { Map, fromJS } from 'immutable';
-import { expect } from 'chai';
-import reducer from '../src/reducer';
+import { test } from 'tape'
+import {
+  is,
+  fromJS,
+  INITIAL_STATE
+} from 'immutable'
+import reducer from '../src/reducer'
 
-describe( 'reducer', ( ) => {
+test( 'reducer SET_ENTRIES', ( t ) => {
 
-  it( 'handles SET_ENTRIES', ( ) => {
-    const initialState = Map( );
-    const action = {
+  const action = {
       type: 'SET_ENTRIES',
       entries: [ 'Trainspotting' ]
-    };
-    const nextState = reducer( initialState, action );
+    },
+    currentState = INITIAL_STATE
 
-    expect( nextState ).to.equal( fromJS( {
+  const message = 'handles SET_ENTRIES action',
+    actual = reducer( currentState, action ),
+    expected = fromJS( {
       entries: [ 'Trainspotting' ]
-    } ) );
-  } );
+    } )
 
-  it( 'handles NEXT', ( ) => {
-    const initialState = fromJS( {
-      entries: [ 'Trainspotting', '28 Days Later' ]
-    } );
-    const action = {
+  t.ok( is( actual, expected ), message )
+  t.end( )
+} )
+
+
+test( 'reducer NEXT', ( t ) => {
+
+  const action = {
       type: 'NEXT'
-    };
-    const nextState = reducer( initialState, action );
+    },
+    currentState = fromJS( {
+      entries: [ 'Trainspotting', '28 Days Later', 'Sunshine' ]
+    } )
 
-    expect( nextState ).to.equal( fromJS( {
+  const message = 'handles NEXT action',
+    actual = reducer( currentState, action ),
+    expected = fromJS( {
       vote: {
         pair: [ 'Trainspotting', '28 Days Later' ]
       },
-      entries: [ ]
-    } ) );
-  } );
+      entries: [ 'Sunshine' ]
+    } )
 
-  it( 'handles VOTE', ( ) => {
-    const initialState = fromJS( {
-      vote: {
-        pair: [ 'Trainspotting', '28 Days Later' ]
-      },
-      entries: [ ]
-    } );
-    const action = {
+  t.ok( is( actual, expected ), message )
+  t.end( )
+} )
+
+
+test( 'reducer VOTE', ( t ) => {
+
+  const action = {
       type: 'VOTE',
       entry: 'Trainspotting'
-    };
-    const nextState = reducer( initialState, action );
-
-    expect( nextState ).to.equal( fromJS( {
+    },
+    currentState = fromJS( {
+      entries: [ ],
       vote: {
         pair: [ 'Trainspotting', '28 Days Later' ],
         tally: {
-          Trainspotting: 1
+          'Trainspotting': 1
         }
-      },
-      entries: [ ]
-    } ) );
-  } );
+      }
+    } )
 
-  it( 'has an initial state', ( ) => {
-    const action = {
-      type: 'SET_ENTRIES',
-      entries: [ 'Trainspotting' ]
-    };
-    const nextState = reducer( undefined, action );
-    expect( nextState ).to.equal( fromJS( {
-      entries: [ 'Trainspotting' ]
-    } ) );
-  } );
+  const message = 'handles VOTE action',
+    actual = reducer( currentState, action ),
+    expected = fromJS( {
+      entries: [ ],
+      vote: {
+        pair: [ 'Trainspotting', '28 Days Later' ],
+        tally: {
+          'Trainspotting': 2
+        }
+      }
+    } )
 
-  it( 'can be used with reduce', ( ) => {
-    const actions = [ {
-      type: 'SET_ENTRIES',
-      entries: [ 'Trainspotting', '28 Days Later' ]
-    }, {
-      type: 'NEXT'
-    }, {
-      type: 'VOTE',
-      entry: 'Trainspotting'
-    }, {
-      type: 'VOTE',
-      entry: '28 Days Later'
-    }, {
-      type: 'VOTE',
-      entry: 'Trainspotting'
-    }, {
-      type: 'NEXT'
-    } ];
-    const finalState = actions.reduce( reducer, Map( ) );
+  t.ok( is( actual, expected ), message )
+  t.end( )
+} )
 
-    expect( finalState ).to.equal( fromJS( {
+test( 'reducer with no state', ( t ) => {
+
+  const message = 'with undefined state it should return the initial state',
+    action = { type: 'SET_ENTRIES', entries: [ 'Sunshine' ] },
+    actual = reducer( undefined, action ),
+    expected = fromJS( { entries: [ 'Sunshine' ] } )
+
+  t.ok( is( actual, expected ), message )
+  t.end( )
+} )
+
+test( 'reduce actions in series', ( t ) => {
+
+  const message = 'actions can be applied in series',
+    actions = [
+      { type: 'SET_ENTRIES', entries: [ 'Trainspotting', '28 Days Later' ] },
+      { type: 'NEXT' },
+      { type: 'VOTE', entry: 'Trainspotting' },
+      { type: 'VOTE', entry: '28 Days Later' },
+      { type: 'VOTE', entry: 'Trainspotting' },
+      { type: 'NEXT' }
+    ],
+    actual = actions.reduce( reducer, INITIAL_STATE ),
+    expected = fromJS( {
       winner: 'Trainspotting'
-    } ) );
-  } );
+    } )
 
-} );
+  t.ok( is( actual, expected ), message )
+  t.end( )
+} )
