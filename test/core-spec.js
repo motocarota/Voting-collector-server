@@ -1,147 +1,124 @@
+import { test } from 'tape'
 import {
-  List, Map, fromJS
-}
-from 'immutable';
+    is,
+    fromJS
+} from 'immutable'
 import {
-  expect
-}
-from 'chai';
+    next,
+    vote,
+    setEntries
+} from '../src/core'
 
-import {
-  setEntries, next, vote
-}
-from '../src/core';
+const state = fromJS({}),
+    entries = ['Trainspotting', '28 Days Later', 'Sunshine']
 
-describe( 'application logic', ( ) => {
+test('setEntries', (t) => {
 
-  describe( 'setEntries', ( ) => {
+    const message = "setEntries correctly sets the state",
+        actual = setEntries(state, entries),
+        expected = fromJS({ entries })
 
-    it( 'adds the entries to the state', ( ) => {
-      const state = fromJS( {} );
-      const entries = fromJS( [ 'Trainspotting', '28 Days Later' ] );
-      const nextState = setEntries( state, entries );
-      expect( nextState ).to.equal( fromJS( {
-        entries: [ 'Trainspotting', '28 Days Later' ]
-      } ) );
-    } );
+    t.ok(is(actual, expected), message)
+    t.end()
+})
 
-    it( 'converts to immutable', ( ) => {
-      const state = fromJS( {} );
-      const entries = [ 'Trainspotting', '28 Days Later' ];
-      const nextState = setEntries( state, entries );
-      expect( nextState ).to.equal( fromJS( {
-        entries: [ 'Trainspotting', '28 Days Later' ]
-      } ) );
-    } );
+test('next (basic)', (t) => {
 
-  } );
+    let message = 'takes the next two entries under vote',
+        actual = next(setEntries(state, entries)),
+        expected = fromJS({
+            vote: {
+                pair: ['Trainspotting', '28 Days Later']
+            },
+            entries: ['Sunshine']
+        })
 
-  describe( 'next', ( ) => {
+    t.ok(is(actual, expected), message)
+    t.end()
+})
 
-    it( 'takes the next two entries under vote', ( ) => {
-      const state = fromJS( {
-        entries: [ 'Trainspotting', '28 Days Later', 'Sunshine' ]
-      } );
-      const nextState = next( state );
-      expect( nextState ).to.equal( fromJS( {
-        vote: {
-          pair: [ 'Trainspotting', '28 Days Later' ],
-          entries: [ 'Sunshine' ]
-        }
-      } ) );
-    } );
+test('next (win)', (t) => {
 
-  } );
+  const message = 'puts winner of current vote back to entries',
+    currentState = fromJS( {
+				vote: {
+					pair: [ 'Trainspotting', '28 Days Later' ],
+						tally: {
+							'Trainspotting': 4,
+							'28 Days Later': 2
+					}
+				},
+				entries: [ 'Sunshine', 'Millions', '127 Hours' ]
+			} ),
+      actual = next( currentState ),
+			expected = fromJS( {
+					vote: {
+						pair: [ 'Sunshine', 'Millions' ]
+					},
+					entries: [ '127 Hours', 'Trainspotting' ]
+				} )
 
-  describe( 'vote', ( ) => {
+  t.ok( is( actual, expected ), message) 
+  t.end()
+})
 
-    it( 'creates a tally for the voted entry', ( ) => {
-      const state = Map( {
-        pair: List.of( 'Trainspotting', '28 Days Later' )
-      } );
-      const nextState = vote( state, 'Trainspotting' )
-      expect( nextState ).to.equal( Map( {
-        pair: List.of( 'Trainspotting', '28 Days Later' ),
-        tally: Map( {
-          'Trainspotting': 1
-        } )
-      } ) );
-    } );
+test('next (pareggio)', (t) => {
 
-    it( 'adds to existing tally for the voted entry', ( ) => {
-      const state = Map( {
-        pair: List.of( 'Trainspotting', '28 Days Later' ),
-        tally: Map( {
-          'Trainspotting': 3,
-          '28 Days Later': 2
-        } )
-      } );
-      const nextState = vote( state, 'Trainspotting' );
-      expect( nextState ).to.equal( Map( {
-        pair: List.of( 'Trainspotting', '28 Days Later' ),
-        tally: Map( {
-          'Trainspotting': 4,
-          '28 Days Later': 2
-        } )
-      } ) );
-    } );
+  const message = 'puts both from tied vote back to entries',
+    currentState = fromJS( {
+				vote: {
+					pair: [ 'Trainspotting', '28 Days Later' ],
+						tally: {
+							'Trainspotting': 3,
+							'28 Days Later': 3
+					}
+				},
+				entries: [ 'Sunshine', 'Millions', '127 Hours' ]
+			} ),
+      actual = next( currentState ),
+			expected = fromJS( {
+					vote: {
+						pair: [ 'Sunshine', 'Millions' ]
+					},
+					entries: [ '127 Hours', 'Trainspotting', '28 Days Later' ]
+				} )
 
+  t.ok( is( actual, expected ), message) 
+  t.end()
+})
 
-    it( 'puts winner of current vote back to entries', ( ) => {
-      const state = fromJS( {
-        vote: {
-          pair: [ 'Trainspotting', '28 Days Later' ],
-          tally: {
-            'Trainspotting': 4,
-            '28 Days Later': 2
-          }
-        },
-        entries: [ 'Sunshine', 'Millions', '127 Hours' ]
-      } );
-      const nextState = next( state );
-      expect( nextState ).to.equal( fromJS( {
-        vote: {
-          pair: [ 'Sunshine', 'Millions' ]
-        },
-        entries: [ '127 Hours', 'Trainspotting' ]
-      } ) );
-    } );
+test('vote', (t) => {
 
-    it( 'puts both from tied vote back to entries', ( ) => {
-      const state = fromJS( {
-        vote: {
-          pair: [ 'Trainspotting', '28 Days Later' ],
-          tally: {
-            'Trainspotting': 3,
-            '28 Days Later': 3
-          }
-        },
-        entries: [ 'Sunshine', 'Millions', '127 Hours' ]
-      } );
-      const nextState = next( state );
-      expect( nextState ).to.equal( fromJS( {
-        vote: {
-          pair: [ 'Sunshine', 'Millions' ]
-        },
-        entries: [ '127 Hours', 'Trainspotting', '28 Days Later' ]
-      } ) );
-    } );
-  } );
+	let currentState = next(setEntries(state, entries))
 
-  it( 'marks winner when just one entry left', ( ) => {
-    const state = fromJS( {
-      vote: {
-        pair: [ 'Trainspotting', '28 Days Later' ],
-        tally: {
-          'Trainspotting': 4,
-          '28 Days Later': 2
-        }
-      },
-      entries: [ ]
-    } );
-    const nextState = next( state );
-    expect( nextState ).to.equal( Map( {
-      winner: 'Trainspotting'
-    } ) );
-  } );
-} );
+	currentState = vote(currentState, 'Trainspotting')
+
+  let message = 'creates a tally for the voted entry',
+    actual = currentState.toJS().tally,
+    expected = {
+        'Trainspotting': 1
+    }
+
+  t.deepEqual(actual, expected, message)
+
+  currentState = vote(currentState, '28 Days Later') 
+  message = 'adds to existing tally for the voted entry'
+  actual = currentState.toJS().tally 
+  expected = {
+      'Trainspotting': 1,
+      '28 Days Later': 1
+  }
+
+  t.deepEqual(actual, expected, message)
+
+ 	currentState = vote(currentState, 'Trainspotting')
+  message = 'adds to existing tally for the voted entry'
+  actual = currentState.toJS().tally
+  expected = {
+      'Trainspotting': 2,
+      '28 Days Later': 1
+  }
+
+  t.deepEqual(actual, expected, message) 
+  t.end()
+})

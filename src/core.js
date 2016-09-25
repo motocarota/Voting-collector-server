@@ -1,49 +1,76 @@
 import {
-	List, Map
+	List,
+	Map,
+	fromJS
 }
-from 'immutable';
-
-export const INITIAL_STATE = Map();
-
-export function setEntries( state, entries ) {
-
-	return state.set( 'entries', List( entries ) ); //imposta lo stato, rendendolo immutabile
-}
-
-export function next( state ) {
-
-	const entries = state.get( 'entries' )
-		.concat( getWinners( state.get( 'vote' ) ) );
-
-	if ( entries.size === 1 ) {
-		return state.remove( 'vote' ) // se ho un solo concorrente
-			.remove( 'entries' )
-			.set( 'winner', entries.first( ) ); // ha vinto lui 
-	} else {
-		return state.merge( {
-			vote: Map( {
-				pair: entries.take( 2 )
-			} ), //prende le prime due entry dalla coda
-			entries: entries.skip( 2 ) //lascia le rimanenti entry in coda
-		} )
-	};
-}
-
-export function vote( voteState, entry ) {
-
-	return voteState.updateIn( //aggiorna nel path..
-		[ 'tally', entry ], //state.vote.tally.Trainspotting
-		0, //se il path non esiste crea e imposta a 0
-		tally => tally + 1 //aggiungi 1 al valore
-	);
-}
+from 'immutable'
 
 function getWinners( vote ) {
-	if ( !vote ) return [ ];
-	const [ a, b ] = vote.get( 'pair' );
-	const aVotes = vote.getIn( [ 'tally', a ], 0 );
-	const bVotes = vote.getIn( [ 'tally', b ], 0 );
-	if ( aVotes > bVotes ) return [ a ];
-	else if ( aVotes < bVotes ) return [ b ];
-	else return [ a, b ];
+
+	if ( !vote ) {
+		return []
+	}
+	const [ a, b ] = vote.get( 'pair' )
+	const aVotes = vote.getIn( [ 'tally', a ], 0 )
+	const bVotes = vote.getIn( [ 'tally', b ], 0 )
+	if ( aVotes === bVotes ) {
+		return [ a, b ]
+	}
+	return ( aVotes < bVotes ) ?
+		 [ b ] : [ a ]
+}
+
+// ritorna lo stato iniziale
+
+const INITIAL_STATE = Map()
+
+// imposta le entry per il voto nello stato
+
+const setEntries = ( state, entries ) =>
+	state.set( 'entries', List( entries ) )
+
+// crea una mappa "vote" sullo stato, spostandoci le prime due entry disponibili
+
+const next = ( state ) => {
+
+	const entries = state
+		.get( 'entries' )
+		.concat( getWinners( state.get( 'vote' ) ) )
+
+	// se ho un solo concorrente ha vinto
+	if ( entries.size === 1 ) {
+
+		return state.remove( 'vote' ) 
+			.remove( 'entries' )
+			.set( 'winner', entries.first() )
+	}
+
+	return state.merge( fromJS({
+		vote: {
+			// prende le prime due entry dalla coda
+			pair: entries.take( 2 )  
+		},
+		// lascia le rimanenti entry in coda
+		entries: entries.skip( 2 ) 
+	} ) )
+}
+
+// When a vote is ongoing, it should be possible for people to vote 
+// on entries. When a new vote is cast for an entry, a "tally" for it 
+// should appear in the vote. 
+// If there already is a tally for the entry, it should be incremented:
+
+const vote = ( voteState, entry ) => {
+
+	return voteState.updateIn( 
+		[ 'tally', entry ], 0, tally => tally + 1 
+	)
+}
+
+
+export {
+	INITIAL_STATE,
+	setEntries,
+	next,
+	vote
 }
